@@ -2,7 +2,7 @@ import time
 import curses
 import asyncio
 import random
-
+# test comment
 
 async def blink(canvas, row, column, symbol='*'):
     delay = random.randint(0, 10)
