@@ -6,10 +6,12 @@ import random
 from utils import read_rocket_frames
 from curses_tools import *
 
-ROCKET_FRAMES = read_rocket_frames('graphics')
+ROCKET_FRAMES = read_rocket_frames('graphics/rocket')
+TRASH_FRAMES = read_rocket_frames('graphics/trash')
 BORDER_WIDTH = 1
 TIC_TIMEOUT = 0.1
 STARS_AMOUNT = random.randint(10, 100)
+COROUTINES = []
 
 
 async def blink(canvas, row, column, offset_tics, symbol='*'):
@@ -54,6 +56,34 @@ async def animate_spaceship(canvas, row, column, max_row, max_col):
             draw_frame(canvas, round(row), round(column), frame, negative=True)
 
 
+async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
+    """Animate garbage, flying from top to bottom.
+     Сolumn position will stay same, as specified on start."""
+
+    rows_number, columns_number = canvas.getmaxyx()
+
+    column = max(column, 0)
+    column = min(column, columns_number - 1)
+
+    row = 0
+
+    while row < rows_number:
+        draw_frame(canvas, row, column, garbage_frame)
+        await asyncio.sleep(0)
+        draw_frame(canvas, row, column, garbage_frame, negative=True)
+        row += speed
+
+
+async def fill_orbit_with_garbage(canvas):
+    while True:
+        rows_number, columns_number = canvas.getmaxyx()
+        frame_num = random.randint(1, len(TRASH_FRAMES) - 1)
+        garbage_coroutine = fly_garbage(canvas, random.randint(1, columns_number - 1), TRASH_FRAMES[frame_num])
+        COROUTINES.append(garbage_coroutine)
+        for i in range(20):
+            await asyncio.sleep(0)
+
+
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
     """Display animation of gun shot. Direction and speed can be specified."""
 
@@ -87,27 +117,27 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
 def draw(canvas):
     """Start main loop for coroutines and draw all graphics"""
 
-    coroutines = []
     max_row, max_col = canvas.getmaxyx()
     canvas.nodelay(True)
 
-    coroutines.append(fire(canvas, max_row // 2, max_col // 2))
-    coroutines.append(animate_spaceship(canvas, max_row // 2, max_col // 2 - 2, max_row, max_col))
+    COROUTINES.append(fire(canvas, max_row // 2, max_col // 2))
+    COROUTINES.append(animate_spaceship(canvas, max_row // 2, max_col // 2 - 2, max_row, max_col))
+    COROUTINES.append(fill_orbit_with_garbage(canvas))
     for i in range(STARS_AMOUNT):
         column = random.randint(1, max_col - 1)
         row = random.randint(1, max_row - 1)
         symbol = random.choice('+*.:')
-        coroutines.append(blink(canvas, row, column, random.randint(0, 10), symbol))
+        COROUTINES.append(blink(canvas, row, column, random.randint(0, 10), symbol))
 
-    while coroutines:
+    while COROUTINES:
         curses.curs_set(False)
         canvas.border()
-        for coroutine in coroutines:
+        for coroutine in COROUTINES:
             try:
                 coroutine.send(None)
             except StopIteration:
-                coroutines.remove(coroutine)
-            if len(coroutines) == 0:
+                COROUTINES.remove(coroutine)
+            if len(COROUTINES) == 0:
                 break
         canvas.refresh()
         time.sleep(TIC_TIMEOUT)
