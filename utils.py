@@ -1,7 +1,8 @@
 import os
+import asyncio
 
 
-def read_rocket_frames(directory):
+def read_frames(directory):
     """Read frames from specified directory"""
 
     frames = []
@@ -12,3 +13,8 @@ def read_rocket_frames(directory):
             frames.append(frame)
 
     return frames
+
+
+async def sleep(tics=1):
+    for i in range(tics):
+        await asyncio.sleep(0)

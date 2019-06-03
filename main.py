@@ -3,11 +3,11 @@ import curses
 import asyncio
 import random
 
-from utils import read_rocket_frames
+from utils import read_frames, sleep
 from curses_tools import *
 
-ROCKET_FRAMES = read_rocket_frames('graphics/rocket')
-TRASH_FRAMES = read_rocket_frames('graphics/trash')
+ROCKET_FRAMES = read_frames('graphics/rocket')
+TRASH_FRAMES = read_frames('graphics/trash')
 BORDER_WIDTH = 1
 TIC_TIMEOUT = 0.1
 STARS_AMOUNT = random.randint(10, 100)
@@ -19,22 +19,17 @@ async def blink(canvas, row, column, offset_tics, symbol='*'):
 
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        for i in range(offset_tics):
-            await asyncio.sleep(0)
-        for i in range(20):
-            await asyncio.sleep(0)
+        await sleep(offset_tics)
+        await sleep(20)
 
         canvas.addstr(row, column, symbol)
-        for i in range(3):
-            await asyncio.sleep(0)
+        await sleep(3)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        for i in range(5):
-            await asyncio.sleep(0)
+        await sleep(5)
 
         canvas.addstr(row, column, symbol)
-        for i in range(3):
-            await asyncio.sleep(0)
+        await sleep(5)
 
 
 async def animate_spaceship(canvas, row, column, max_row, max_col):
@@ -80,8 +75,7 @@ async def fill_orbit_with_garbage(canvas):
         frame_num = random.randint(1, len(TRASH_FRAMES) - 1)
         garbage_coroutine = fly_garbage(canvas, random.randint(1, columns_number - 1), TRASH_FRAMES[frame_num])
         COROUTINES.append(garbage_coroutine)
-        for i in range(20):
-            await asyncio.sleep(0)
+        await sleep(20)
 
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
